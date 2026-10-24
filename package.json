@@ -1,0 +1,31 @@
+{
+  "name": "ai-smart-task-management-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-oriented AI-Powered Smart Task Management Platform with local Ollama LLM integration",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --parallel",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "test:server": "npm run test --workspace=server",
+    "test:client": "npm run test --workspace=client",
+    "install:all": "npm install"
+  },
+  "keywords": [
+    "task-management",
+    "react",
+    "nodejs",
+    "express",
+    "ollama",
+    "ai-decomposition",
+    "smart-priorities"
+  ],
+  "author": "Soft Game Studio ",
+  "license": "MIT"
+}

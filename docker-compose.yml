@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: smart-task-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: smart_task_db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - task_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: smart-task-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - task_network
+
+volumes:
+  mongo_data:
+  ollama_models:
+
+networks:
+  task_network:
+    driver: bridge
