@@ -1,15 +1,20 @@
 import { Router } from 'express';
-import { decomposeTask, approveDecomposition, getAIStatus } from './ai.controller.js';
+import { getAIStatus } from './ai.controller.js';
 
 const router = Router();
 
-// GET /api/v1/ai/status — Ollama connection status
+// Status endpoint retained for system info
 router.get('/status', getAIStatus);
 
-// POST /api/v1/ai/decompose — Decompose task with local LLM
-router.post('/decompose', decomposeTask);
-
-// POST /api/v1/ai/approve — Human-in-the-Loop: approve and persist subtasks
-router.post('/approve', approveDecomposition);
+// AI conversion / decomposition endpoints removed
+router.all(['/decompose', '/approve'], (req, res) => {
+  res.status(410).json({
+    success: false,
+    error: {
+      code: 'AI_CONVERSION_REMOVED',
+      message: 'AI-based task conversion has been removed. Use the SQL Query Studio or create tasks directly.',
+    },
+  });
+});
 
 export default router;

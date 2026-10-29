@@ -11,6 +11,7 @@ import healthRoutes from './modules/health/health.routes.js';
 import tasksRoutes from './modules/tasks/tasks.routes.js';
 import categoriesRoutes from './modules/categories/categories.routes.js';
 import aiRoutes from './modules/ai/ai.routes.js';
+import queryRoutes from './modules/query/query.routes.js';
 
 const logger = pino({
   level: env.NODE_ENV === 'test' ? 'silent' : 'info',
@@ -48,6 +49,7 @@ export const createApp = () => {
   app.use('/api/v1', healthRoutes);
   app.use('/api/v1/tasks', tasksRoutes);
   app.use('/api/v1/categories', categoriesRoutes);
+  app.use('/api/v1/query', queryRoutes);
   app.use('/api/v1/ai', aiRoutes);
 
   // 404 handler for unknown routes

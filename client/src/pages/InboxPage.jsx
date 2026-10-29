@@ -167,8 +167,8 @@ export const InboxPage = () => {
     });
   };
 
-  const handleDecomposeInAI = (text) => {
-    navigate('/ai-planner', { state: { initialInput: text } });
+  const handleInspectInQueryStudio = (text) => {
+    navigate('/query');
   };
 
   const openEditModal = (task) => {

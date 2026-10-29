@@ -1,10 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app.js';
+import { connectDatabase } from '../config/database.js';
 
 describe('Tasks API Integration Tests (Non-destructive / Isolated)', () => {
   const app = createApp();
   let createdTaskId = null;
+
+  beforeAll(async () => {
+    await connectDatabase();
+  });
 
   it('GET /api/v1/tasks should return list of tasks with pagination meta', async () => {
     const res = await request(app).get('/api/v1/tasks');

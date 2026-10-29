@@ -6,6 +6,7 @@ import {
   Calendar,
   Inbox,
   Sparkles,
+  Database,
   Sliders,
   Briefcase,
   Truck,
@@ -19,7 +20,7 @@ const navigationLinks = [
   { name: 'Today\'s Focus', to: '/today', icon: Calendar },
   { name: 'All Tasks', to: '/tasks', icon: CheckSquare },
   { name: 'Inbox', to: '/inbox', icon: Inbox },
-  { name: 'AI Planner', to: '/ai-planner', icon: Sparkles, badge: 'AI' },
+  { name: 'Query Studio', to: '/query', icon: Database, badge: 'SQL' },
 ];
 
 const workspaceLinks = [

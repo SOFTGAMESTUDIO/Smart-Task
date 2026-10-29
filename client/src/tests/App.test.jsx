@@ -14,7 +14,7 @@ describe('Smart Task Platform App Shell', () => {
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('All Tasks')).toBeInTheDocument();
     expect(screen.getByText('Inbox')).toBeInTheDocument();
-    expect(screen.getByText('AI Planner')).toBeInTheDocument();
+    expect(screen.getByText('Query Studio')).toBeInTheDocument();
   });
 
   it('renders the dashboard welcome card with operational indicator', () => {

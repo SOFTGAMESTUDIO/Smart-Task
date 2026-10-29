@@ -1,5 +1,4 @@
-import mongoose from 'mongoose';
-import TaskModel from '../../database/models/Task.js';
+import { dbAll, dbGet, dbRun } from '../../config/database.js';
 
 // ─── Deterministic Priority Scoring Engine ─────────────────────────────────
 // score = (categoryWeight × 20) + urgencyScore + deadlineScore
@@ -35,256 +34,305 @@ const sortByPriorityScore = (tasks, categoryWeightMap = {}) => {
     .sort((a, b) => b._score - a._score);
 };
 
-// ─── In-memory resilient store ──────────────────────────────────────────────
-const inMemoryTasks = new Map();
-
-const seedInitialTasks = () => {
-  if (inMemoryTasks.size > 0) return;
-
-  const defaults = [
-    {
-      _id: 'mem-101',
-      title: 'Fix React authentication state hydration bug',
-      description: 'Resolve token loss on page reload and wire persistent refresh mechanism.',
-      category: 'Freelance Coding',
-      priority: 'Critical',
-      prioritySource: 'deterministic_engine',
-      status: 'in_progress',
-      estimatedMinutes: 45,
-      actualMinutes: 15,
-      dueAt: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
-      dependencies: [],
-      subtasks: [
-        { _id: 'sub-1', title: 'Reproduce token drop locally', status: 'completed' },
-        { _id: 'sub-2', title: 'Implement local storage listener hook', status: 'in_progress' },
-        { _id: 'sub-3', title: 'Add regression integration test', status: 'todo' },
-      ],
-      recommendationReason: 'Hard deadline + client SLA requirement (weight 5)',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: 'mem-102',
-      title: 'Prepare final deliverables for client review',
-      description: 'Compile deployment instructions, run test suites, and draft summary email.',
-      category: 'Office Work',
-      priority: 'High',
-      prioritySource: 'deterministic_engine',
-      status: 'todo',
-      estimatedMinutes: 60,
-      actualMinutes: 0,
-      dueAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-      dependencies: ['mem-101'],
-      subtasks: [
-        { _id: 'sub-4', title: 'Export API documentation artifact', status: 'todo' },
-        { _id: 'sub-5', title: 'Verify production Docker build', status: 'todo' },
-      ],
-      recommendationReason: 'Prerequisite for client billing milestone',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: 'mem-103',
-      title: 'Deliver 3 customer orders along North route',
-      description: 'Scheduled drop-offs for delivery window before 6 PM.',
-      category: 'Delivery Assignments',
-      priority: 'High',
-      prioritySource: 'deterministic_engine',
-      status: 'todo',
-      estimatedMinutes: 75,
-      actualMinutes: 0,
-      dueAt: new Date(Date.now() + 5 * 3600 * 1000).toISOString(),
-      dependencies: [],
-      subtasks: [],
-      recommendationReason: 'Operational delivery window constraint',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: 'mem-104',
-      title: 'Complete college assignment draft',
-      description: 'Draft and submit the machine learning project report.',
-      category: 'Education',
-      priority: 'Medium',
-      prioritySource: 'deterministic_engine',
-      status: 'todo',
-      estimatedMinutes: 90,
-      actualMinutes: 0,
-      dueAt: new Date(Date.now() + 36 * 3600 * 1000).toISOString(),
-      dependencies: [],
-      subtasks: [
-        { _id: 'sub-6', title: 'Write introduction section', status: 'todo' },
-        { _id: 'sub-7', title: 'Add data analysis charts', status: 'todo' },
-      ],
-      recommendationReason: 'Academic deadline in 36 hours',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: 'mem-105',
-      title: 'Purchase evening groceries',
-      description: 'Buy produce, dairy, and pantry essentials before store closes.',
-      category: 'Personal Errands & Shopping',
-      priority: 'Medium',
-      prioritySource: 'deterministic_engine',
-      status: 'todo',
-      estimatedMinutes: 30,
-      actualMinutes: 0,
-      dueAt: new Date(Date.now() + 7 * 3600 * 1000).toISOString(),
-      dependencies: ['mem-103'],
-      subtasks: [],
-      recommendationReason: 'After delivery run, same route',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: 'mem-106',
-      title: 'Visit office for project sync meeting',
-      description: 'Meet with team to review sprint progress and unblock pending issues.',
-      category: 'Office Work',
-      priority: 'Low',
-      prioritySource: 'deterministic_engine',
-      status: 'todo',
-      estimatedMinutes: 60,
-      actualMinutes: 0,
-      dueAt: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-      dependencies: [],
-      subtasks: [],
-      recommendationReason: 'Flexible window — no hard SLA',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
-
-  defaults.forEach((t) => inMemoryTasks.set(t._id, t));
-};
-
-seedInitialTasks();
-
 // ─── Category weight cache (refreshed from Categories module) ────────────────
 let _categoryWeightCache = {};
 export const setCategoryWeightCache = (map) => { _categoryWeightCache = map; };
 
+// Helper to format task object from SQLite row
+const formatTaskRow = (row, subtasks = []) => {
+  if (!row) return null;
+  let deps = [];
+  try {
+    deps = typeof row.dependencies === 'string' ? JSON.parse(row.dependencies || '[]') : (row.dependencies || []);
+  } catch {
+    deps = [];
+  }
+
+  return {
+    ...row,
+    _id: row.id,
+    id: row.id,
+    dependencies: deps,
+    isAiGenerated: Boolean(row.isAiGenerated),
+    isApproved: Boolean(row.isApproved),
+    subtasks: subtasks.map((st) => ({
+      ...st,
+      _id: st.id,
+      id: st.id,
+    })),
+  };
+};
+
 export const tasksService = {
   async list({ status, category, priority, search, limit = 50, page = 1 } = {}) {
-    if (mongoose.connection.readyState === 1) {
-      const filter = {};
-      if (status) {
-        filter.status = status;
-      } else {
-        filter.status = { $ne: 'cancelled' };
-      }
-      if (category && category !== 'All') filter.category = category;
-      if (priority) filter.priority = priority;
-      if (search) {
-        filter.$or = [
-          { title: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
-        ];
-      }
-
-      const tasks = await TaskModel.find(filter)
-        .sort({ dueAt: 1, createdAt: -1 })
-        .limit(limit)
-        .skip((page - 1) * limit)
-        .lean();
-
-      const total = await TaskModel.countDocuments(filter);
-
-      // Apply deterministic scoring on top of DB results
-      const scored = sortByPriorityScore(tasks, _categoryWeightCache);
-      return { tasks: scored, total, page, limit };
-    }
-
-    // In-Memory Resilient Fallback
-    let items = Array.from(inMemoryTasks.values());
+    const conditions = [];
+    const params = [];
 
     if (status) {
-      items = items.filter((t) => t.status === status);
+      conditions.push('status = ?');
+      params.push(status);
     } else {
-      items = items.filter((t) => t.status !== 'cancelled');
+      conditions.push("status != 'cancelled'");
     }
-    if (category && category !== 'All') items = items.filter((t) => t.category === category);
-    if (priority) items = items.filter((t) => t.priority === priority);
+
+    if (category && category !== 'All') {
+      conditions.push('category = ?');
+      params.push(category);
+    }
+
+    if (priority) {
+      conditions.push('priority = ?');
+      params.push(priority);
+    }
+
     if (search) {
-      const q = search.toLowerCase();
-      items = items.filter(
-        (t) => t.title.toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q)
-      );
+      conditions.push('(title LIKE ? OR description LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
     }
 
-    // Sort in-memory by deterministic priority score
-    const sorted = sortByPriorityScore(items, _categoryWeightCache);
-    const paged = sorted.slice((page - 1) * limit, page * limit);
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    return { tasks: paged, total: sorted.length, page, limit };
+    const countRow = await dbGet(`SELECT COUNT(*) as total FROM tasks ${whereClause}`, params);
+    const total = countRow ? countRow.total : 0;
+
+    const offset = (page - 1) * limit;
+    const rows = await dbAll(
+      `SELECT * FROM tasks ${whereClause} ORDER BY dueAt ASC, createdAt DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    const taskIds = rows.map((r) => r.id);
+    const subtasksMap = {};
+
+    if (taskIds.length > 0) {
+      const placeholders = taskIds.map(() => '?').join(',');
+      const subtaskRows = await dbAll(
+        `SELECT * FROM subtasks WHERE taskId IN (${placeholders}) ORDER BY createdAt ASC`,
+        taskIds
+      );
+
+      for (const st of subtaskRows) {
+        if (!subtasksMap[st.taskId]) subtasksMap[st.taskId] = [];
+        subtasksMap[st.taskId].push(st);
+      }
+    }
+
+    const tasks = rows.map((r) => formatTaskRow(r, subtasksMap[r.id] || []));
+    const scored = sortByPriorityScore(tasks, _categoryWeightCache);
+
+    return { tasks: scored, total, page, limit };
   },
 
   async create(taskData) {
-    if (mongoose.connection.readyState === 1) {
-      const created = await TaskModel.create(taskData);
-      return created.toObject();
+    const id = taskData.id || taskData._id || `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+
+    const title = taskData.title;
+    const description = taskData.description || '';
+    const category = taskData.category || 'General';
+    const priority = taskData.priority || 'Medium';
+    const prioritySource = taskData.prioritySource || 'manual';
+    const status = taskData.status || 'todo';
+    const dueAt = taskData.dueAt || null;
+    const estimatedMinutes = Number(taskData.estimatedMinutes) || 60;
+    const actualMinutes = Number(taskData.actualMinutes) || 0;
+    const dependencies = JSON.stringify(taskData.dependencies || []);
+    const isAiGenerated = taskData.isAiGenerated ? 1 : 0;
+    const isApproved = taskData.isApproved !== false ? 1 : 0;
+    const recommendationReason = taskData.recommendationReason || '';
+    const ownerId = taskData.ownerId || 'user-default';
+
+    await dbRun(
+      `INSERT INTO tasks (
+        id, title, description, category, priority, prioritySource,
+        status, dueAt, estimatedMinutes, actualMinutes, dependencies,
+        isAiGenerated, isApproved, recommendationReason, ownerId, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        title,
+        description,
+        category,
+        priority,
+        prioritySource,
+        status,
+        dueAt,
+        estimatedMinutes,
+        actualMinutes,
+        dependencies,
+        isAiGenerated,
+        isApproved,
+        recommendationReason,
+        ownerId,
+        now,
+        now,
+      ]
+    );
+
+    const subtasks = [];
+    if (Array.isArray(taskData.subtasks)) {
+      for (let i = 0; i < taskData.subtasks.length; i++) {
+        const s = taskData.subtasks[i];
+        const subId = s.id || s._id || `sub-${Date.now()}-${i}`;
+        const subTitle = s.title;
+        const subDesc = s.description || '';
+        const subCat = s.category || category;
+        const subPriority = s.priority || 'Medium';
+        const subStatus = s.status || 'todo';
+        const subEst = Number(s.estimatedMinutes) || 30;
+        const subAct = Number(s.actualMinutes) || 0;
+        const subDue = s.dueAt || null;
+        const subDeps = JSON.stringify(s.dependencies || []);
+        const subCriteria = s.completionCriteria || '';
+
+        await dbRun(
+          `INSERT INTO subtasks (
+            id, taskId, title, description, category, priority, status,
+            estimatedMinutes, actualMinutes, dueAt, dependencies, completionCriteria,
+            createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            subId,
+            id,
+            subTitle,
+            subDesc,
+            subCat,
+            subPriority,
+            subStatus,
+            subEst,
+            subAct,
+            subDue,
+            subDeps,
+            subCriteria,
+            now,
+            now,
+          ]
+        );
+
+        subtasks.push({
+          id: subId,
+          _id: subId,
+          taskId: id,
+          title: subTitle,
+          description: subDesc,
+          category: subCat,
+          priority: subPriority,
+          status: subStatus,
+          estimatedMinutes: subEst,
+          actualMinutes: subAct,
+          dueAt: subDue,
+        });
+      }
     }
 
-    const _id = `mem-${Date.now()}`;
-    const newTask = {
-      _id,
-      ...taskData,
-      subtasks: (taskData.subtasks || []).map((s, idx) => ({
-        _id: `sub-${Date.now()}-${idx}`,
-        ...s,
-      })),
-      prioritySource: 'deterministic_engine',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    inMemoryTasks.set(_id, newTask);
-    return newTask;
+    const created = await this.getById(id);
+    return created;
   },
 
   async getById(id) {
-    if (mongoose.connection.readyState === 1) {
-      return await TaskModel.findById(id).lean();
-    }
-    return inMemoryTasks.get(id) || null;
+    const row = await dbGet('SELECT * FROM tasks WHERE id = ?', [id]);
+    if (!row) return null;
+
+    const subtaskRows = await dbAll('SELECT * FROM subtasks WHERE taskId = ? ORDER BY createdAt ASC', [id]);
+    return formatTaskRow(row, subtaskRows);
   },
 
   async update(id, updates) {
-    if (mongoose.connection.readyState === 1) {
-      return await TaskModel.findByIdAndUpdate(
-        id,
-        { $set: updates },
-        { new: true, runValidators: true }
-      ).lean();
-    }
-
-    const existing = inMemoryTasks.get(id);
+    const existing = await this.getById(id);
     if (!existing) return null;
 
-    const updated = {
-      ...existing,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    inMemoryTasks.set(id, updated);
-    return updated;
+    const allowedFields = [
+      'title',
+      'description',
+      'category',
+      'priority',
+      'prioritySource',
+      'status',
+      'dueAt',
+      'estimatedMinutes',
+      'actualMinutes',
+      'dependencies',
+      'isAiGenerated',
+      'isApproved',
+      'recommendationReason',
+      'ownerId',
+      'completedAt',
+    ];
+
+    const setClauses = [];
+    const params = [];
+
+    for (const key of allowedFields) {
+      if (updates[key] !== undefined) {
+        setClauses.push(`${key} = ?`);
+        if (key === 'dependencies' && typeof updates[key] !== 'string') {
+          params.push(JSON.stringify(updates[key]));
+        } else if (key === 'isAiGenerated' || key === 'isApproved') {
+          params.push(updates[key] ? 1 : 0);
+        } else {
+          params.push(updates[key]);
+        }
+      }
+    }
+
+    setClauses.push('updatedAt = ?');
+    params.push(new Date().toISOString());
+
+    params.push(id);
+
+    if (setClauses.length > 1) {
+      await dbRun(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`, params);
+    }
+
+    // Handle subtasks replacement if provided
+    if (Array.isArray(updates.subtasks)) {
+      await dbRun('DELETE FROM subtasks WHERE taskId = ?', [id]);
+      const now = new Date().toISOString();
+      for (let i = 0; i < updates.subtasks.length; i++) {
+        const s = updates.subtasks[i];
+        const subId = s.id || s._id || `sub-${Date.now()}-${i}`;
+        await dbRun(
+          `INSERT INTO subtasks (
+            id, taskId, title, description, category, priority, status,
+            estimatedMinutes, actualMinutes, dueAt, dependencies, completionCriteria,
+            createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            subId,
+            id,
+            s.title,
+            s.description || '',
+            s.category || existing.category,
+            s.priority || 'Medium',
+            s.status || 'todo',
+            Number(s.estimatedMinutes) || 30,
+            Number(s.actualMinutes) || 0,
+            s.dueAt || null,
+            JSON.stringify(s.dependencies || []),
+            s.completionCriteria || '',
+            now,
+            now,
+          ]
+        );
+      }
+    }
+
+    return await this.getById(id);
   },
 
-  // Delete task (soft delete by default, permanent if requested)
   async delete(id, permanent = false) {
+    const existing = await this.getById(id);
+    if (!existing) return null;
+
     if (permanent) {
-      if (mongoose.connection.readyState === 1) {
-        return await TaskModel.findByIdAndDelete(id).lean();
-      }
-      const existing = inMemoryTasks.get(id);
-      inMemoryTasks.delete(id);
-      return existing || null;
+      await dbRun('DELETE FROM subtasks WHERE taskId = ?', [id]);
+      await dbRun('DELETE FROM tasks WHERE id = ?', [id]);
+      return existing;
     }
+
     return this.softDelete(id);
   },
 
-  // Non-destructive soft-delete
   async softDelete(id) {
     return this.update(id, {
       status: 'cancelled',
@@ -311,7 +359,6 @@ export const tasksService = {
       return due <= endOfDay || t.priority === 'Critical';
     });
 
-    // Already sorted by priority score from list()
     return todayTasks;
   },
 };

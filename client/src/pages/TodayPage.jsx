@@ -9,6 +9,7 @@ import {
   Pause,
   RotateCcw,
   Sparkles,
+  Database,
   ArrowRight,
   Loader2,
   Check,
@@ -248,15 +249,15 @@ export const TodayPage = () => {
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
             <h3 className="text-base font-bold text-slate-100">All Scheduled Tasks for Today Complete!</h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Great work. You've cleared today's priority commitments. Capture new tasks or use AI Planner to organize your upcoming work.
+              Great work. You've cleared today's priority commitments. Capture new tasks or use Query Studio to inspect upcoming work.
             </p>
             <div className="flex justify-center gap-3 pt-2">
               <Button size="sm" variant="outline" onClick={() => navigate('/tasks')}>
                 View All Tasks
               </Button>
-              <Button size="sm" onClick={() => navigate('/ai-planner')}>
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Planner</span>
+              <Button size="sm" onClick={() => navigate('/query')}>
+                <Database className="w-3.5 h-3.5" />
+                <span>Query Studio</span>
               </Button>
             </div>
           </CardContent>

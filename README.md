@@ -53,3 +53,11 @@ Phase 1 establishes the monorepo foundation, environment validation, database co
 - [API Specifications](file:///c:/Users/Soft%20Game%20Studio/OneDrive/Document/HAckthone/docs/API.md)
 - [Security Model & Guidelines](file:///c:/Users/Soft%20Game%20Studio/OneDrive/Document/HAckthone/docs/SECURITY.md)
 - [Development & Contribution Guide](file:///c:/Users/Soft%20Game%20Studio/OneDrive/Document/HAckthone/docs/DEVELOPMENT.md)
+
+
+
+sprint
+
+kan ban 
+
+

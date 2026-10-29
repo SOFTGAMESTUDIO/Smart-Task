@@ -73,12 +73,14 @@ export const apiClient = {
   getCategories: () => request('/categories', { method: 'GET' }),
   updateCategoryWeight: (id, weight) => request(`/categories/${id}`, { method: 'PATCH', body: { weight } }),
 
-  // AI Decomposition API (120s timeout for local LLM inference)
+  // SQL Query API
+  executeQuery: (query, params = []) =>
+    request('/query/execute', { method: 'POST', body: { query, params }, timeout: 15000 }),
+  getQuerySchema: () => request('/query/schema', { method: 'GET', timeout: 5000 }),
+  getQueryPresets: () => request('/query/presets', { method: 'GET', timeout: 5000 }),
+
+  // System status
   getAIStatus: () => request('/ai/status', { method: 'GET', timeout: 5000 }),
-  decomposeTask: (taskDescription, model) =>
-    request('/ai/decompose', { method: 'POST', body: { taskDescription, model }, timeout: 120000 }),
-  approveDecomposition: (originalInput, subtasks) =>
-    request('/ai/approve', { method: 'POST', body: { originalInput, subtasks }, timeout: 30000 }),
 };
 
 export default apiClient;

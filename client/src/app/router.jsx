@@ -5,7 +5,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { TasksPage } from '../pages/TasksPage';
 import { TodayPage } from '../pages/TodayPage';
 import { InboxPage } from '../pages/InboxPage';
-import { AIPlannerPage } from '../pages/AIPlannerPage';
+import { QueryStudioPage } from '../pages/QueryStudioPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 
@@ -36,8 +36,12 @@ export const router = createBrowserRouter(
           element: <InboxPage />,
         },
         {
+          path: 'query',
+          element: <QueryStudioPage />,
+        },
+        {
           path: 'ai-planner',
-          element: <AIPlannerPage />,
+          element: <Navigate to="/query" replace />,
         },
         {
           path: 'settings',

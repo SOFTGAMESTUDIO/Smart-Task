@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Sparkles,
+  Database,
+  Code2,
   ArrowRight,
   Clock,
   CheckCircle,
@@ -59,16 +61,16 @@ export const DashboardPage = () => {
             Welcome to Smart Task Platform
           </h2>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Modular task management powered by deterministic priority rules and local Ollama LLM decomposition.
+            Modular task management powered by local SQLite database and deterministic priority scoring engine.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button variant="outline" size="sm" onClick={() => navigate('/tasks')}>
             View All Tasks
           </Button>
-          <Button size="sm" onClick={() => navigate('/ai-planner')}>
-            <Sparkles className="w-4 h-4 text-blue-200" />
-            <span>AI Decomposition</span>
+          <Button size="sm" onClick={() => navigate('/query')}>
+            <Database className="w-4 h-4 text-blue-200" />
+            <span>SQL Query Studio</span>
           </Button>
         </div>
       </div>
@@ -180,29 +182,30 @@ export const DashboardPage = () => {
           <Card elevated>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-400" />
-                <CardTitle>Natural Language Task Input</CardTitle>
+                <Database className="w-4 h-4 text-blue-400" />
+                <CardTitle>Direct SQL Query</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-slate-400 leading-relaxed">
-                Enter tasks in everyday language. The local Ollama model decomposes complex commitments into actionable subtasks with proposed estimates.
+                Query, filter, and inspect tasks directly on your local SQLite database with SQL precision and zero network latency.
               </p>
 
               <div className="relative">
                 <textarea
                   rows={4}
-                  value={quickInput}
+                  value={quickInput || "SELECT id, title, priority, status, dueAt FROM tasks WHERE status != 'completed' ORDER BY priority ASC LIMIT 10;"}
                   onChange={(e) => setQuickInput(e.target.value)}
-                  placeholder="e.g., Deliver three customer orders by 5 PM, fix the client login crash, and buy grocery items before evening..."
-                  className="w-full rounded-lg bg-slate-950/80 border border-slate-700/80 p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                  placeholder="Enter custom SQL query (e.g. SELECT * FROM tasks WHERE priority = 'Critical')..."
+                  className="w-full rounded-lg bg-slate-950/80 border border-slate-700/80 p-3 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                  spellCheck="false"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                <span className="text-[11px] text-slate-400">Model: qwen2.5-coder:latest (Local)</span>
-                <Button size="sm" disabled={!quickInput.trim()} onClick={() => navigate('/ai-planner', { state: { initialInput: quickInput } })}>
-                  <span>Analyze</span>
+                <span className="text-[11px] text-slate-400 font-mono">Database: ./tasks.sqlite</span>
+                <Button size="sm" onClick={() => navigate('/query')}>
+                  <span>Run in Studio</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -224,15 +227,15 @@ export const DashboardPage = () => {
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Database Layer</span>
-                <span className="text-slate-300 font-medium">MongoDB Atlas Ready</span>
+                <span className="text-emerald-400 font-medium">Local SQLite (Connected)</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Local LLM Interface</span>
-                <span className="text-slate-300 font-medium">Ollama (Backend Guardrails)</span>
+                <span className="text-slate-400">Query Engine</span>
+                <span className="text-blue-400 font-medium">Interactive Studio Active</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-slate-400">Data Protection</span>
-                <span className="text-emerald-400 font-medium">Strict Non-Destructive</span>
+                <span className="text-slate-400">Priority Engine</span>
+                <span className="text-emerald-400 font-medium">Deterministic Scoring</span>
               </div>
             </CardContent>
           </Card>

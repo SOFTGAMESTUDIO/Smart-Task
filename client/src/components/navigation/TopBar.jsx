@@ -10,7 +10,8 @@ const routeTitles = {
   '/today': 'Today\'s Focus',
   '/tasks': 'Tasks',
   '/inbox': 'Capture Inbox',
-  '/ai-planner': 'AI Task Decomposition',
+  '/query': 'SQL Query Studio',
+  '/ai-planner': 'SQL Query Studio',
   '/settings': 'Priority Settings',
 };
 

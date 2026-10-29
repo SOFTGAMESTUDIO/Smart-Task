@@ -9,7 +9,10 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
-  // Direct MongoDB URI or individual encoded Atlas credentials
+  // Local SQLite Database
+  SQLITE_DB_PATH: z.string().default('./src/database/tasks.sqlite'),
+
+  // Direct MongoDB URI or individual encoded Atlas credentials (optional fallback)
   MONGODB_URI: z.string().optional(),
   MONGODB_USERNAME: z.string().optional(),
   MONGODB_PASSWORD: z.string().optional(),
