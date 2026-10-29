@@ -44,3 +44,10 @@ Thumbs.db
 .temp/
 tmp/
 scratch/
+
+# Local SQLite databases
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

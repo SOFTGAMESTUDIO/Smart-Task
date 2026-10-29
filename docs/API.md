@@ -69,11 +69,11 @@ Base URL: `/api/v1`
 - `DELETE /api/v1/tasks/:taskId`
 - `POST /api/v1/tasks/:taskId/complete`
 
-### 4. AI Planning & Decomposition (Phase 3)
-- `POST /api/v1/ai/plan` (Body: `{ "taskInput": "..." }`)
-- `POST /api/v1/ai/plan/:planId/approve`
-- `POST /api/v1/ai/plan/:planId/reject`
-- `POST /api/v1/ai/plan/:planId/regenerate`
+### 4. SQL Query Studio & Execution Engine
+- `POST /api/v1/query/execute` (Body: `{ "query": "SELECT * FROM tasks WHERE ...", "params": [] }`)
+- `GET /api/v1/query/schema` (Returns database tables, column definitions, and row counts)
+- `GET /api/v1/query/presets` (Returns pre-built SQL query templates for tasks and analytics)
+- *(Note: AI conversion endpoints have been removed in favor of direct SQL query execution)*
 
 ### 5. Categories & Priorities (Phase 2 & 4)
 - `GET /api/v1/categories`
